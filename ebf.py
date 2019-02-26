@@ -214,11 +214,11 @@ import numpy
 import sys
 import time
 import os
+from __future__ import print_function
 
 __version__ = "0.0.20"
 
 if sys.version_info[0] < 3:
-    from __future__ import print_function
     def tobytes(x):
         if type(x) is unicode:
             return x.encode('latin-1')
