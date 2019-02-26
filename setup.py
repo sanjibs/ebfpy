@@ -6,7 +6,7 @@ except ImportError:
     setup
 setup(name='ebfpy',
       version='0.0.20',
-      description='a module to read and write .ebf files (efficient and easy to use binary format)',
+      description='a module to read and write .ebf files (efficient and easy to use binary format) for python 2 and 3 ',
       py_modules=['ebf'],
       scripts=['scripts/ebftk'],	
       author='Sanjib Sharma',

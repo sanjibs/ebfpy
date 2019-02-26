@@ -11,10 +11,10 @@
 # of the source code distribution tree.     
 #--------------------------------------------------------------------------    
 
-#(Created on 15/05/2012)
+#(Created on 01/12/2018) (Python 2 and 3)
 
 """
-A module to read and write data in ebf format. 
+A module to read and write data in ebf format (Python 2 and 3). 
 
  .. moduleauthor: Sanjib Sharma <bugsanjib at gmail com>
 
@@ -3416,7 +3416,7 @@ def _usage():
 #        print '     ebftkpy -speed filename'        
         print("NAME:")
         print('\t >>EBF<<  (Efficient and Easy to use Binary File Format)')
-        print("\t ebftkpy 0.0.1 - a toolkit for  EBF  files")
+        print("\t ebftk 0.0.20 - a toolkit for  EBF  files")
         print("\t Copyright (c) 2012 Sanjib Sharma ")
         print("USAGE:")
         print("\t ebftkpy\t -list filename")
