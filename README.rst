@@ -1,15 +1,17 @@
----------------------------------------------------------------------
-EBF (Efficient Binary Format) 
--------------------------------
-Software Library and Utilities (Python 2 and 3)
+EBF 
+====
+**EBF (Efficient Binary File Format)*** 
+
 
 The  EBF library is a collection of software tools to read 
-and write EBF format files. The full EBF copyright notice, 
+and write EBF format files. ebfpy is a module  for Python 2 and 3.
+The full EBF copyright notice, 
 including terms governing use, modification, and redistribution, 
 is contained in  the files COPYING and COPYRIGHT.
 
+
 Installation
-------------
+-------------
 To install do the following
 
 pip install --user --upgrade git+https://github.com/sanjibs/ebfpy.git@master
