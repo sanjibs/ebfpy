@@ -11,7 +11,7 @@
 # of the source code distribution tree.     
 #--------------------------------------------------------------------------    
 
-#(Created on 01/12/2018) (Python 2 and 3)
+#(Created on 12/01/2018) (Python 2 and 3)
 
 """
 A module to read and write data in ebf format (Python 2 and 3). 
