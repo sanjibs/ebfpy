@@ -1,0 +1,261 @@
+#! /usr/bin/env python
+#-----------------------------------------------------------------------------
+#
+#EBF (Efficient Binary Format) Software Library and Utilities
+#Copyright (c) 2012 Sanjib Sharma
+#All rights reserved.
+#
+# This file is part of EBF.  The full EBF copyright notice, including       
+# terms governing use, modification, and redistribution, is contained in    
+# the files COPYING and COPYRIGHT,  which can be found at the root        
+# of the source code distribution tree.     
+#--------------------------------------------------------------------------    
+
+#(Created on 15/05/2012)
+
+"""
+A module to read and write data in ebf format. 
+
+ .. moduleauthor: Sanjib Sharma <bugsanjib at gmail com>
+
+EBF is a binary format for storing data. It is designed to   
+read and write data, easily and efficiently. 
+
+- Store multiple data items in one file, each having a unique tag name
+
+  + tagnames follow the convention of unix style pathname e.g. /x or /mydata/x
+  + this allows hierarchical storage of data
+
+- Automatic type and endian conversion  
+- Support for mutiple programming languages
+
+  + data can easily read in C, C++, Fortran, Java, IDL and Matlab
+  + facilitates easy distribution of data 
+
+- Comprehensive numpy support
+
+  + data is read back as numpy arrays
+  + almost any numpy array can be written
+  + Nested numpy structures are also supported
+
+- Read and write directly a recursive dictionary of numpy arrays
+
+To install  
+::
+
+$pip install ebfpy           OR
+$pip install ebfpy --user    OR
+
+Alternatively
+::
+
+$tar -zxvf ebfpy_x.x.x.tar.gz
+$cd ebfpy_x.x.x
+$python setup.py install --user                            OR 
+$python setup.py install --user --install-scripts=mypath   OR
+$python setup.py install  --install-scripts=mypath 
+
+
+The --install_scripts option if specified 
+determines the installation location of the command line script ebftkpy, 
+the ebf module is always installed in a standard location. 
+It is better to set this manually (to something like '/usr/local/bin' 
+or somewhere in home) because the standard script installation location might 
+not be in your search path. With *--user* option generally the scripts are 
+installed in *~/.local/bin/*.
+
+To run the test suite just do (from within folder ebfpy_x.x.x)
+::
+
+$./ebf.py 
+
+Example:
+
+Write specific numpy arrays.
+
+>>> import ebf
+>>> import numpy
+>>> x = numpy.random.rand(2,5)
+>>> y = numpy.random.rand(2,5)
+>>> ebf.write('check.ebf', '/x', x, "w")
+>>> ebf.write('check.ebf', '/y', y, "a")
+
+Write in a different path within an ebf file .
+
+>>> ebf.write('check.ebf', '/mypath/x', x, "a")
+>>> ebf.write('check.ebf', '/mypath/y', y, "a")
+
+Read back the written arrays
+
+>>> x1 = ebf.read('check.ebf', '/x')
+>>> y1 = ebf.read('check.ebf', '/mypath/y')
+
+Read all items in an ebf path as a dictionary
+such that data["x"] is same as x1
+such that data["y"] is same as y1
+
+>>> data = ebf.read('check.ebf', '/mypath/')
+
+Check the contents of the file.
+
+>>> ebf.info('check.ebf')
+check.ebf 2460 bytes
+------------------------------------------------------------------
+name                           dtype    endian  unit       dim       
+------------------------------------------------------------------
+/.ebf/info                     int64    little             [5]       
+/.ebf/htable                   int8     little             [1256]    
+/x                             float64  little             [2 5]     
+/y                             float64  little             [2 5]     
+/mypath/x                      float64  little             [2 5]     
+/mypath/y                      float64  little             [2 5]     
+
+    
+Split a structure and write individual data items in 
+path "/mypath/" in an ebf file.
+
+>>> dth = numpy.dtype([('data_u1', 'u1', (2, 5)), ('data_u2', 'u2', (2, 5))])
+>>> data = numpy.zeros(1, dtype = dth)
+>>> ebf.write('check.ebf', '/mypath/', data, "w")
+>>> data1 = ebf.read('check.ebf', '/mypath/')
+>>> ebf.info('check.ebf') 
+check.ebf 1906 bytes
+------------------------------------------------------------------
+name                           dtype    endian  unit       dim       
+------------------------------------------------------------------
+/.ebf/info                     int64    little             [5]       
+/.ebf/htable                   int8     little             [1256]    
+/mypath/data_u1                uint8    little             [2 5]     
+/mypath/data_u2                uint16   little             [2 5] 
+
+
+Write a nested structure and read it back.
+
+>>> dth = numpy.dtype([('data_u1', 'u1', (2, 5)), ('data_u2', 'u2', (2, 5))])
+>>> dth1 = numpy.dtype([('data_u1', 'u1', (2, 5)), ('point1', dth, (1, ))])
+>>> data = numpy.zeros(10, dtype = dth1)
+>>> ebf.write("check.ebf", "/data", data, "w")
+>>> data1 = ebf.read("check.ebf", "/data")
+>>> ebf.info("check.ebf")
+check.ebf 2247 bytes
+------------------------------------------------------------------
+name                           dtype    endian  unit       dim       
+------------------------------------------------------------------
+/.ebf/info                     int64    little             [5]       
+/.ebf/htable                   int8     little             [1256]    
+/data                          struct   little             [10]      
+structure definition:
+ver-1 
+struct {
+uint8 data_u1 2  2  5  ;
+struct {
+uint8 data_u1 2  2  5  ;
+uint16 data_u2 2  2  5  ;
+} point1 1 1   ; 
+} anonymous 1 1   ; 
+
+Write a string and read it back as string.
+Note, return type is numpy.ndarray, hence have to use tostring() 
+method to convert it back to string.
+
+>>> x = "abcdefghijkl"
+>>> ebf.write("check.ebf", "/mystr", numpy.array(x), "w")
+>>> y = ebf.read("check.ebf", "/mystr").tostring()
+
+Write a list of string and read it back as numpy.ndarray of type numpy.string
+
+>>> x = ["abc", "abcdef"]
+>>> ebf.write("check.ebf", "/mystr", numpy.array(x), "w")
+>>> y = ebf.read("check.ebf", "/mystr")
+>>> print y[0] == "abc",y[1] == "abcdef"
+True True
+
+
+Write with units and read it back.
+
+>>> data = numpy.zeros(1, dtype = "int32")
+>>> ebf.write('check.ebf', '/data', data, "w",dataunit="100 m/s")
+>>> print, ebf.unit('check.ebf', '/data')
+
+
+Check if a data item is present.
+
+>>> ebf.containsKey('check.ebf', '/data')
+
+
+"""
+import ebf
+import sys
+
+if __name__  ==  '__main__':
+#    __test_scalar()
+#    _checkSpeed()
+#    unittest.main()
+#    __check()
+
+    if len(sys.argv) == 1:
+        ebf._usage()
+    elif len(sys.argv) == 2:
+        if sys.argv[1] == '-speed':
+            ebf._checkSpeed()
+        elif sys.argv[1] == '-help':
+            ebf._usage()
+        else:
+            ebf.info(sys.argv[1])
+    else:
+        if sys.argv[1] == '-list':
+            ebf.info(sys.argv[2],1)
+        elif sys.argv[1] == '-stat':
+            ebf.stat(sys.argv[2],sys.argv[3])
+        elif sys.argv[1] == '-print':
+            ebf.cat(sys.argv[2],sys.argv[3],' ',0)
+        elif sys.argv[1] == '-cat':
+            ebf.cat(sys.argv[2],sys.argv[3],' ',0)
+        elif sys.argv[1] == '-ssv':
+            ebf.cat(sys.argv[2],sys.argv[3],' ',1)
+        elif sys.argv[1] == '-csv':
+            ebf.cat(sys.argv[2],sys.argv[3],', ',1)                                
+        elif sys.argv[1] == '-swap':
+            ebf.swapEndian(sys.argv[2])
+        elif sys.argv[1] == '-diff':
+            ebf.diff(sys.argv[2],sys.argv[3])
+        elif sys.argv[1] == '-htab':
+            ebf._EbfTable.display_htab(sys.argv[2])
+        elif sys.argv[1] == '-copy':
+            if len(sys.argv) == 4: 
+                ebf.copy(sys.argv[2],sys.argv[3],'a')
+            elif len(sys.argv) == 5:    
+                ebf.copy(sys.argv[2],sys.argv[3],'a',sys.argv[4])
+            elif len(sys.argv) == 6:    
+                ebf.copy(sys.argv[2],sys.argv[3],'a',sys.argv[4],sys.argv[5])
+            else:
+                ebf._usage()
+        elif sys.argv[1] == '-rename':
+            if len(sys.argv) == 5: 
+                ebf.rename(sys.argv[2],sys.argv[3],sys.argv[4])            
+            else:
+                ebf._usage()                
+        elif sys.argv[1] == '-remove':
+            if len(sys.argv) == 4: 
+                ebf.rename(sys.argv[2],sys.argv[3],'')
+            else:
+                ebf._usage()                       
+        elif sys.argv[1] == '-join':
+            if len(sys.argv) == 5: 
+                from glob import glob
+                if '*' in sys.argv[2]:
+                    filelist=glob(sys.argv[2])
+                    filelist.sort()
+                    print(filelist)
+                    join(filelist,'/',sys.argv[3],'/',sys.argv[4])
+                else:
+                    join(sys.argv[2],'/',sys.argv[3],'/',sys.argv[4])
+            else:
+                ebf._usage()
+        else:
+            ebf._usage()
+        
+
+
+    
+    
