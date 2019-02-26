@@ -210,11 +210,11 @@ Check if a data item is present.
 # Overflow Runtime warning suppressed in ebflthash using np.seterr
 
 
+from __future__ import print_function
 import numpy
 import sys
 import time
 import os
-from __future__ import print_function
 
 __version__ = "0.0.20"
 
