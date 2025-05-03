@@ -4,6 +4,11 @@ try:
 except ImportError:
     from distutils.core import setup
     setup
+
+from pathlib import Path
+this_directory = Path(__file__).parent
+long_description = (this_directory / "README.rst").read_text()
+
 setup(name='ebfpy',
       version='0.0.30',
       description='a module to read and write .ebf files (efficient and easy to use binary format) for python 2 and 3 ',
@@ -21,23 +26,6 @@ setup(name='ebfpy',
         "Operating System :: OS Independent",
         "Topic :: Software Development :: Libraries :: Python Modules",
 	"Topic :: Scientific/Engineering"],
-      long_description="""\
-Python module for reading and writing .ebf files (compatible with Python 3)
----------------------------------------------
-EBF is a binary format for storing data. It is designed to   
-read and write data, easily and efficiently. 
-- Store multiple data items in one file, each having a unique tag name
-  + tagnames follow the convention of unix style pathname e.g. /x or /mydata/x
-- Automatic type and endian conversion  
-- Support for multiple programming languages
-  + data can easily read in C, C++, Fortran, Java, IDL and Matlab
-  + facilitates easy distribution of data 
-- Comprehensive numpy support
-  + data is read back as numpy arrays
-  + almost any numpy array can be written
-  + Nested numpy structures are also supported
-- Read and write directly a recursive dictionary of numpy arrays
-- Internally uses hashtable for fast retireival of data items. 
-  + also allows for overwrite prevention
-"""
-      )
+      long_description_content_type="text/x-rst",
+      long_description=long_description
+)
