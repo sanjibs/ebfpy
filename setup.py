@@ -5,7 +5,7 @@ except ImportError:
     from distutils.core import setup
     setup
 setup(name='ebfpy',
-      version='0.0.20',
+      version='0.0.30',
       description='a module to read and write .ebf files (efficient and easy to use binary format) for python 2 and 3 ',
       py_modules=['ebf'],
       scripts=['scripts/ebftk'],	

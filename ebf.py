@@ -185,6 +185,7 @@ Check if a data item is present.
 
 """
 
+# 0.0.30 added support dtype.char == 'U'
 # 0.0.20 compatible with python3
 # 0.0.9  with open replaced with try and finally in update_ind for pyver<2.5
 # 0.0.8 ebf.update_ind()  added
@@ -216,33 +217,59 @@ import sys
 import time
 import os
 
-__version__ = "0.0.20"
+__version__ = "0.0.30"
 
 if sys.version_info[0] < 3:
     def tobytes(x):
         if type(x) is unicode:
             return x.encode('latin-1')
+        elif type(x) is numpy.ndarray:
+            if x.dtype.char == 'U':
+                return np.array(x,dtype='S')
+            else:
+                return x
         else:
             return x
 
     def tostr(x):
         if type(x) is unicode:
             return x.decode('utf-8')
+        elif type(x) is numpy.ndarray:
+            if x.dtype.char == 'U':
+                return np.array(x,dtype='S')
+            else:
+                return x
         else:
             return x
 else:
     def tobytes(x):
         if type(x) is str:
             return x.encode('latin-1')
+        elif type(x) is numpy.ndarray:
+            if x.dtype.char == 'U':
+                return numpy.array(x,dtype='S')
+            else:
+                return x
         else:
             return x
 
     def tostr(x):
         if type(x) is bytes:
             return x.decode('utf-8')
+        elif type(x) is numpy.ndarray:
+            if x.dtype.char == 'S':
+                return numpy.array(x,dtype='U')
+            else:
+                return x
         else:
             return x
 
+
+def dict2list(mydict):
+    return [mydict[key] for key in sorted(mydict)]
+
+def list2dict(mylist,prefix='_le'):
+    return {(prefix+str(i)):mylist[i] for i in range(len(mylist))}
 
 class _EbfUtils(object):
         
@@ -2167,6 +2194,7 @@ def read(filename, path = '/' ,recon=0,ckon=1,begin=0,end=None):
             if header.flagswap == 1:
                 x = x.byteswap(True)
             x = x.reshape(header.getshape())
+            x=tostr(x)
             fp1.close()
             return x
 
@@ -2313,6 +2341,7 @@ def write(filename, tagname, data, mode, dataunit = ""):
 #            header.create(tagname, data, dataunit, "ver-1 \n"+__descr2sdef(data.dtype.descr,dshape=data.shape))
             header.create(tagname, data,'',descr2sdef(data.dtype.descr, dataunit))
         else:    
+            data=tobytes(data)
             header.create(tagname, data, dataunit, "")
 
         fp1  =  open(filename, mode1)
@@ -2876,7 +2905,7 @@ def info(filename,option=0):
             else:
                 en = 'little' 
     
-        print("{0:30s} {1:8s} {2:7s} {3:10s} {4:10s}".format(header.name, _TypeManager.itos_l(header.datatype), en, header.dataunit, str(header.dim)))
+        print("{0:30s} {1:8s} {2:7s} {3:10s} {4:10s}".format(tostr(header.name), _TypeManager.itos_l(header.datatype), en, tostr(header.dataunit), str(header.dim)))
         fp1.seek(header.capacity(), 1)
             
         if (option == 1) and (header.datatype == 8):
