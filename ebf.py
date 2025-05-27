@@ -2173,7 +2173,7 @@ def read(filename, path = '/' ,recon=0,ckon=1,begin=0,end=None):
                     print('ebf Warning, begin>end')
                     end1=begin1
                 if begin1 > 0:
-                    fp1.seek(begin1*header.datasize*header.elements()//header.dim[0],1) 
+                    fp1.seek(begin1*int(header.datasize)*int(header.elements())//int(header.dim[0]),1) 
                 if (end1-begin1) != header.dim[0]:
                     header.dim[0]=end1-begin1
                     
