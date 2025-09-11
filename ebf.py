@@ -210,10 +210,11 @@ Check if a data item is present.
 # April 2015 all None comparison changed to is not and is 
 # Overflow Runtime warning suppressed in ebflthash using np.seterr
 # Sep 2025
-# In ebfheader.read11() replaced elf.datapos = self.headerpos+self.headersize  with elf.datapos = self.headerpos+int(self.headersize) 
+# In ebfheader.read11() replaced elf.datapos = self.headerpos+self.headersize  with self.datapos = self.headerpos+int(self.headersize) 
 # replace numpy.tostring() to numpy.tobytes()
 # Introduced function numpy_buffer() to replace numpy.fromstring with numpy.frombuffer
 # changed encodding in tobytes() and tostr() from 'latin-1' to 'ascii' 
+# all header.datasize header.headersize are int32 wrapped with int() where applicable to avoid mixed integer types
 
 from __future__ import print_function
 import numpy
@@ -229,7 +230,7 @@ if sys.version_info[0] < 3:
             return x.encode('ascii')
         elif type(x) is numpy.ndarray:
             if x.dtype.char == 'U':
-                return np.array(x,dtype='S')
+                return numpy.array(x,dtype='S')
             else:
                 return x
         else:
@@ -240,7 +241,7 @@ if sys.version_info[0] < 3:
             return x.decode('utf-8')
         elif type(x) is numpy.ndarray:
             if x.dtype.char == 'U':
-                return np.array(x,dtype='S')
+                return numpy.array(x,dtype='S')
             else:
                 return x
         else:
@@ -765,7 +766,7 @@ class _EbfHeader:
 
     def rename(self,name):
         name=tobytes(name)
-        extrasize=self.headersize-(56 + len(name) + len(self.dataunit) + len(self.sdef) +  8 * self.dim.size)
+        extrasize=int(self.headersize)-(56 + len(name) + len(self.dataunit) + len(self.sdef) +  8 * self.dim.size)
         extrasize =extrasize- (len(name)-len(self.name))
         if extrasize < 2:
             raise RuntimeError('EBF: Not enough extra space in header to rename')
@@ -855,7 +856,7 @@ class _EbfHeader:
             temp+=self.name+self.dataunit+self.sdef
         
         
-        extra = self.headersize-len(temp)
+        extra = int(self.headersize)-len(temp)
     
         if extra<0:
             fp1.close()
@@ -2192,7 +2193,7 @@ def read(filename, path = '/' ,recon=0,ckon=1,begin=0,end=None):
                     print('ebf Warning, begin>end')
                     end1=begin1
                 if begin1 > 0:
-                    fp1.seek(begin1*header.datasize*header.elements()//header.dim[0],1) 
+                    fp1.seek(begin1*int(header.datasize)*int(header.elements())//int(header.dim[0]),1) 
                 if (end1-begin1) != header.dim[0]:
                     header.dim[0]=end1-begin1
                     
@@ -2202,7 +2203,7 @@ def read(filename, path = '/' ,recon=0,ckon=1,begin=0,end=None):
                 dth1 = dth1+str(header.datasize)
             if header.datatype == 1:
                 dth1 = 'S'+str(header.dim[-1])
-                header.datasize=header.datasize*header.dim[-1]
+                header.datasize=numpy.int32(header.datasize*header.dim[-1]) # casting not required but just to remind that datasize is int32
                 header.dim = header.dim[0:len(header.dim)-1]
                 # if header.dim.size == 1:
                 #     header.dim[0] = 1
@@ -2404,14 +2405,14 @@ def write(filename, tagname, data, mode, dataunit = ""):
                 fp1.seek(0, 2)
                 locend=fp1.tell()            
                 fp1.seek(location, 0)            
-                if location+header1.headersize+header1.capacity() != locend:
+                if location+int(header1.headersize)+int(header1.capacity()) != locend:
                     fp1.close()
                     raise RuntimeError(b'Cannot update as not last item '+tagname)
                 if header1.dim.size > 1:
                     if numpy.prod(header1.dim[1:]) != numpy.prod(header.dim[1:]) :
                         fp1.close()
                         raise RuntimeError(b'Cannot update as rank do not match '+tagname)
-                dataend=location+header1.headersize+header1.elements()*header1.datasize
+                dataend=location+int(header1.headersize)+int(header1.elements())*int(header1.datasize)
                 header1.dim[0]=header.dim[0]+header1.dim[0]
                 if header1.capacity_<(header1.elements()*header1.datasize):
                     header1.capacity_=(header1.elements()*header1.datasize)
@@ -2509,7 +2510,7 @@ def npstruct2dict(data):
 #    fp1.seek(0, 2)
 #    locend=fp1.tell()            
 #    fp1.close()
-#    if location+header1.headersize+header1.capacity() == locend:
+#    if location+int(header1.headersize)+int(header1.capacity()) == locend:
 #        return True
 #    else:
 #        return False
@@ -2587,7 +2588,7 @@ def update_ind(filename,dataname,data,ind=None):
                     dth1 = numpy.dtype('S'+str(header.datasize))
                 if header.datatype == 1:
                     dth1 = numpy.dtype('S'+str(header.dim[-1]))
-                    header.datasize=header.datasize*header.dim[-1]
+                    header.datasize=numpy.int32(header.datasize*header.dim[-1])
                     if header.dim.size == 1:
                         header.dim[0] = 1
                     else:                
@@ -2643,7 +2644,7 @@ def update_ind(filename,dataname,data,ind=None):
                 inda=numpy.argsort(ind)
                 for i in inda:
                     if ind[i] != icur: 
-                        fp1.seek(datalocation+ind[i]*header.datasize*data[0].size, 0)
+                        fp1.seek(datalocation+int(ind[i])*int(header.datasize)*data[0].size, 0)
                         icur=ind[i]
                     # to handle strings [i:i+1] needed instead of [i]
                     fp1.write(data[i:i+1].tobytes('C'))
@@ -2752,17 +2753,18 @@ class EbfFile():
                 else:                
                     self.header.dim = self.header.dim[0:len(self.header.dim) - 1]
                     
-            self.shape = list(self.header.getshape())
+#            self.shape = list(self.header.getshape())
+            self.shape=[int(i) for i in self.header.getshape()]
             self.rank = self.header.dim.size                        
 #            self.rest = self.header.elements() / self.shape[0]
 #            self.elements = self.shape[0]
             self.rest = 1
-            self.elements = self.header.elements()
+            self.elements = int(self.header.elements())
             if self.rank>1:
-                self.rest = self.header.elements() // self.shape[0]
+                self.rest = int(self.header.elements()) // self.shape[0]
                 self.elements = self.shape[0]
                 
-            self.datasize = self.header.datasize * self.rest
+            self.datasize = int(self.header.datasize) * self.rest
         
     def _write_init(self):
         if self.location < 0:
@@ -2840,14 +2842,14 @@ class EbfFile():
     def close(self):
         if self.fp != None:
             if ((self.mode == 'w')|(self.mode == 'a'))and(self.fp.tell()>self.location):
-                temp=self.header.elements()//self.header.dim[0]
-                datawritten=self.fp.tell()-(self.location+self.header.headersize)
-                bufsize=datawritten%(temp*self.header.datasize)
+                temp=int(self.header.elements()//self.header.dim[0])
+                datawritten=self.fp.tell()-(self.location+int(self.header.headersize))
+                bufsize=datawritten%(temp*int(self.header.datasize))
                 if bufsize > 0:     
                     x=numpy.zeros(bufsize,dtype='int8')
                     self.fp.write(x.tobytes('C'))
                     datawritten=datawritten+bufsize
-                self.header.dim[0]=datawritten//(temp*self.header.datasize)
+                self.header.dim[0]=datawritten//(temp*int(self.header.datasize))
                 if datawritten == 0:
                     self.header.dim=numpy.zeros(1, dtype = "int64")                            
                 if datawritten > self.header.capacity_:
@@ -3240,7 +3242,7 @@ def swapEndian(filename):
         if header1.datatype == 1:
             dth1 = 'S'+str(header1.dim[-1])
             
-        dblock_size=header1.elements()*header1.datasize    
+        dblock_size=int(header1.elements())*int(header1.datasize)    
         
         if ((header1.name.startswith(b'/.ebf/')==False) and (header1.name.startswith(b'/.tr/')==False)):                  
             data = numpy_frombuffer(fp1.read(dblock_size), dtype = dth1)
@@ -3648,7 +3650,7 @@ class _ebf_test(unittest.TestCase):
         write("check.ebf", "/mystr", x, "w")      
         y = read("check.ebf", "/mystr")
         self.assertEqual(bool(numpy.all(x==y)),True)
-#        self.assertEqual(numpy.all(x==np.array(y,dtype='S')),True)
+#        self.assertEqual(numpy.all(x==numpy.array(y,dtype='S')),True)
 
     def testlargefile(self):
         """ Check writing files greater than 2 GB"""
