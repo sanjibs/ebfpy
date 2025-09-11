@@ -10,7 +10,7 @@ this_directory = Path(__file__).parent
 long_description = (this_directory / "README.rst").read_text()
 
 setup(name='ebfpy',
-      version='0.0.30',
+      version='0.0.40',
       description='a module to read and write .ebf files (efficient and easy to use binary format) for python 2 and 3 ',
       py_modules=['ebf'],
       scripts=['scripts/ebftk'],	
